@@ -2,10 +2,10 @@
 // Groq AI — прямі HTTP запити через axios (без groq-sdk, уникає fetch-баг Node.js 22)
 
 const axios = require('axios');
-const { FREE_SYSTEM_PROMPT, PAID_SYSTEM_PROMPT, MODERATION_SYSTEM_PROMPT } = require('../prompts/system');
+const { FREE_SYSTEM_PROMPT, PAID_SYSTEM_PROMPT } = require('../prompts/system');
 
 const TEXT_MODEL   = 'llama-3.1-8b-instant';
-const VISION_MODEL = 'llama-3.2-11b-vision-preview';
+const VISION_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct';
 const GROQ_URL     = 'https://api.groq.com/openai/v1/chat/completions';
 
 function headers() {
@@ -65,25 +65,10 @@ async function generateRoast(tier, userDescription, photoBase64 = null, mimeType
 }
 
 /**
- * Модерація фото
+ * Модерація фото — вимкнена для MVP (завжди safe)
  */
-async function moderatePhoto(photoBase64, mimeType = 'image/jpeg') {
-  try {
-    const result = await callGroq(VISION_MODEL, [
-      { role: 'system', content: MODERATION_SYSTEM_PROMPT },
-      { role: 'user', content: [
-        { type: 'image_url', image_url: { url: `data:${mimeType};base64,${photoBase64}` } },
-        { type: 'text', text: 'Проаналізуй.' },
-      ]},
-    ], 0.1, 128);
-
-    const match = result.match(/\{.*\}/s);
-    if (match) return JSON.parse(match[0]);
-    return { safe: true };
-  } catch (err) {
-    console.error('Moderation error:', err.message);
-    return { safe: true };
-  }
+async function moderatePhoto() {
+  return { safe: true };
 }
 
 module.exports = { generateRoast, moderatePhoto };
