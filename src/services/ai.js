@@ -2,9 +2,11 @@
 // Groq AI сервіс — генерація ростів та модерація
 
 const Groq = require('groq-sdk');
+const fetch = require('node-fetch');
 const { FREE_SYSTEM_PROMPT, PAID_SYSTEM_PROMPT, MODERATION_SYSTEM_PROMPT } = require('../prompts/system');
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+// node-fetch передається щоб уникнути бага Node.js 22 built-in fetch ("Premature close")
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY, fetch: fetch });
 
 // Модель для тексту (швидка та безкоштовна)
 const TEXT_MODEL = 'llama-3.1-8b-instant';
