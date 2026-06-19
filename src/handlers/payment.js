@@ -28,38 +28,13 @@ async function sendRoastInvoice(ctx) {
 }
 
 /**
- * Обробка callback кнопки "Токсична версія за X Stars"
+ * Доставка токсичного росту та картки (спільна логіка для оплаченого або безкоштовного для власника)
  */
-async function handlePayRoastCallback(ctx) {
-  await ctx.answerCbQuery('Зараз відкрию оплату! 💫');
-  await sendRoastInvoice(ctx);
-}
-
-/**
- * Обов'язкове підтвердження перед списанням Stars
- */
-async function handlePreCheckout(ctx) {
-  // Завжди підтверджуємо — Telegram вимагає відповіді протягом 10 сек
-  await ctx.answerPreCheckoutQuery(true);
-}
-
-/**
- * Успішна оплата → генеруємо токсичний рост + картку
- */
-async function handleSuccessfulPayment(ctx) {
-  const userId = ctx.from.id;
-  const username = ctx.from.username;
-  const starsAmount = ctx.message.successful_payment.total_amount;
-
-  // Зберігаємо платіж
-  savePayment(userId, starsAmount, 'completed');
-
-  await ctx.reply('💸 *Оплата отримана! Починаю генерувати твій токсичний рост...*', {
+async function deliverToxicRoast(ctx, userId, username) {
+  await ctx.reply('⏳ Починаю генерувати твій токсичний рост...', {
     parse_mode: 'Markdown',
   });
 
-  // Генеруємо токсичний рост
-  // Беремо останній текст від юзера із сесії (зберігаємо в ctx.session або просто без тексту)
   const userText = ctx.session?.lastText || 'Людина без опису';
 
   let roastText;
@@ -69,7 +44,7 @@ async function handleSuccessfulPayment(ctx) {
     roastText = await generateRoast('paid', userText, photoBase64, mimeType);
   } catch (err) {
     console.error('Помилка генерації платного росту:', err.message);
-    return ctx.reply('😵 Помилка генерації. Зверніться в підтримку — ми повернемо Stars!');
+    return ctx.reply('😵 Помилка генерації. Спробуйте ще раз!');
   }
 
   // Генеруємо картку
@@ -122,6 +97,48 @@ async function handleSuccessfulPayment(ctx) {
     ctx.session.lastText = null;
     ctx.session.lastPhotoBase64 = null;
   }
+}
+
+/**
+ * Обробка callback кнопки "Токсична версія за X Stars"
+ */
+async function handlePayRoastCallback(ctx) {
+  const userId = ctx.from.id;
+  const ownerId = process.env.OWNER_ID ? parseInt(process.env.OWNER_ID) : null;
+
+  if (ownerId && userId === ownerId) {
+    await ctx.answerCbQuery('👑 Безкоштовний доступ для власника!');
+    await deliverToxicRoast(ctx, userId, ctx.from.username);
+  } else {
+    await ctx.answerCbQuery('Зараз відкрию оплату! 💫');
+    await sendRoastInvoice(ctx);
+  }
+}
+
+/**
+ * Обов'язкове підтвердження перед списанням Stars
+ */
+async function handlePreCheckout(ctx) {
+  // Завжди підтверджуємо — Telegram вимагає відповіді протягом 10 сек
+  await ctx.answerPreCheckoutQuery(true);
+}
+
+/**
+ * Успішна оплата → генеруємо токсичний рост + картку
+ */
+async function handleSuccessfulPayment(ctx) {
+  const userId = ctx.from.id;
+  const username = ctx.from.username;
+  const starsAmount = ctx.message.successful_payment.total_amount;
+
+  // Зберігаємо платіж
+  savePayment(userId, starsAmount, 'completed');
+
+  await ctx.reply('💸 *Оплата отримана!*', {
+    parse_mode: 'Markdown',
+  });
+
+  await deliverToxicRoast(ctx, userId, username);
 }
 
 module.exports = {
