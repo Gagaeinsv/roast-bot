@@ -30,6 +30,7 @@ FILES = [
     "src/handlers/roast.js",
     "src/handlers/payment.js",
     "src/handlers/top.js",
+    "assets/Inter-Bold.ttf",
 ]
 
 def run(client, cmd, ignore_error=False):
@@ -95,6 +96,7 @@ def main():
         REMOTE_DIR + "/db",
         REMOTE_DIR + "/logs",
         REMOTE_DIR + "/cards",
+        REMOTE_DIR + "/assets",
     ]:
         run(client, "mkdir -p " + d, ignore_error=True)
 
