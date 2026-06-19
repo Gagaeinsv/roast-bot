@@ -64,8 +64,8 @@ module.exports = {
 ENDOFFILE
 
 cat > /opt/roast-bot/.env << 'ENDOFFILE'
-BOT_TOKEN=8320352009:AAF7RqLaQBbJDLFpiWLLHMce0YDoTzBVH9c
-GROQ_API_KEY=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
+BOT_TOKEN=ВСТАВИТИ_ТОКЕН_ВІД_BOTFATHER
+GROQ_API_KEY=ВСТАВИТИ_GROQ_API_KEY
 DATABASE_PATH=/opt/roast-bot/db/roast.db
 ENDOFFILE
 
