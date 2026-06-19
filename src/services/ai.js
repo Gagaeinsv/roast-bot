@@ -1,111 +1,77 @@
 // src/services/ai.js
-// Groq AI сервіс — генерація ростів та модерація
+// Groq AI — прямі HTTP запити через axios (без groq-sdk, уникає fetch-баг Node.js 22)
 
-const Groq = require('groq-sdk');
-const fetch = require('node-fetch');
+const axios = require('axios');
 const { FREE_SYSTEM_PROMPT, PAID_SYSTEM_PROMPT, MODERATION_SYSTEM_PROMPT } = require('../prompts/system');
 
-// node-fetch передається щоб уникнути бага Node.js 22 built-in fetch ("Premature close")
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY, fetch: fetch });
-
-// Модель для тексту (швидка та безкоштовна)
-const TEXT_MODEL = 'llama-3.1-8b-instant';
-// Модель для vision (аналіз фото)
+const TEXT_MODEL   = 'llama-3.1-8b-instant';
 const VISION_MODEL = 'llama-3.2-11b-vision-preview';
+const GROQ_URL     = 'https://api.groq.com/openai/v1/chat/completions';
+
+function headers() {
+  return {
+    'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+    'Content-Type': 'application/json',
+  };
+}
 
 /**
- * Генерує рост на основі тексту або фото
- * @param {string} tier - 'free' або 'paid'
- * @param {string} userDescription - текстовий опис від юзера
- * @param {string|null} photoBase64 - фото у base64 (опціонально)
- * @param {string|null} mimeType - MIME тип фото (image/jpeg тощо)
+ * Загальний виклик Groq API
+ */
+async function callGroq(model, messages, temperature = 0.9, maxTokens = 512) {
+  const res = await axios.post(GROQ_URL, {
+    model,
+    messages,
+    temperature,
+    max_tokens: maxTokens,
+  }, { headers: headers(), timeout: 30000 });
+
+  return res.data.choices[0].message.content.trim();
+}
+
+/**
+ * Генерує рост (текст або vision)
  */
 async function generateRoast(tier, userDescription, photoBase64 = null, mimeType = 'image/jpeg') {
   const systemPrompt = tier === 'paid' ? PAID_SYSTEM_PROMPT : FREE_SYSTEM_PROMPT;
 
-  // Якщо є фото — використовуємо vision модель
   if (photoBase64) {
-    const messages = [
-      { role: 'system', content: systemPrompt },
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'image_url',
-            image_url: { url: `data:${mimeType};base64,${photoBase64}` },
-          },
-          {
-            type: 'text',
-            text: userDescription
-              ? `Ось фото людини. Додаткова інформація від неї: "${userDescription}". Зроби рост!`
-              : 'Ось фото людини. Зроби рост на основі того, що бачиш!',
-          },
-        ],
-      },
+    const userContent = [
+      { type: 'image_url', image_url: { url: `data:${mimeType};base64,${photoBase64}` } },
+      { type: 'text', text: userDescription
+          ? `Фото людини. Додатково: "${userDescription}". Зроби рост!`
+          : 'Ось фото. Зроби рост на основі того що бачиш!' },
     ];
-
-    const response = await groq.chat.completions.create({
-      model: VISION_MODEL,
-      messages,
-      temperature: 0.9,
-      max_tokens: 512,
-    });
-
-    return response.choices[0].message.content.trim();
+    return callGroq(VISION_MODEL, [
+      { role: 'system', content: systemPrompt },
+      { role: 'user',   content: userContent },
+    ]);
   }
 
-  // Без фото — тільки текст
-  const response = await groq.chat.completions.create({
-    model: TEXT_MODEL,
-    messages: [
-      { role: 'system', content: systemPrompt },
-      {
-        role: 'user',
-        content: `Людина описує себе так: "${userDescription}". Зроби рост!`,
-      },
-    ],
-    temperature: 0.9,
-    max_tokens: 512,
-  });
-
-  return response.choices[0].message.content.trim();
+  return callGroq(TEXT_MODEL, [
+    { role: 'system', content: systemPrompt },
+    { role: 'user',   content: `Людина описує себе: "${userDescription}". Зроби рост!` },
+  ]);
 }
 
 /**
- * Модерація фото перед обробкою
- * Повертає { safe, reason, hasMinor }
+ * Модерація фото
  */
 async function moderatePhoto(photoBase64, mimeType = 'image/jpeg') {
   try {
-    const response = await groq.chat.completions.create({
-      model: VISION_MODEL,
-      messages: [
-        { role: 'system', content: MODERATION_SYSTEM_PROMPT },
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'image_url',
-              image_url: { url: `data:${mimeType};base64,${photoBase64}` },
-            },
-            { type: 'text', text: 'Проаналізуй це зображення.' },
-          ],
-        },
-      ],
-      temperature: 0.1,
-      max_tokens: 128,
-    });
+    const result = await callGroq(VISION_MODEL, [
+      { role: 'system', content: MODERATION_SYSTEM_PROMPT },
+      { role: 'user', content: [
+        { type: 'image_url', image_url: { url: `data:${mimeType};base64,${photoBase64}` } },
+        { type: 'text', text: 'Проаналізуй.' },
+      ]},
+    ], 0.1, 128);
 
-    const raw = response.choices[0].message.content.trim();
-    // Парсимо JSON з відповіді
-    const jsonMatch = raw.match(/\{.*\}/s);
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
-    }
-    // Якщо не вдалося розпарсити — дозволяємо (fail-open для зручності)
+    const match = result.match(/\{.*\}/s);
+    if (match) return JSON.parse(match[0]);
     return { safe: true };
   } catch (err) {
-    console.error('Помилка модерації:', err.message);
+    console.error('Moderation error:', err.message);
     return { safe: true };
   }
 }
