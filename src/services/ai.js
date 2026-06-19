@@ -4,7 +4,7 @@
 const axios = require('axios');
 const { FREE_SYSTEM_PROMPT, PAID_SYSTEM_PROMPT } = require('../prompts/system');
 
-const TEXT_MODEL   = 'llama-3.3-70b-versatile';
+const TEXT_MODEL   = 'llama-3.1-8b-instant';
 const VISION_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct';
 const GROQ_URL     = 'https://api.groq.com/openai/v1/chat/completions';
 
