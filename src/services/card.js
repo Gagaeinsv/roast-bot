@@ -21,7 +21,7 @@ let fontData = null;
 async function getFontData() {
   if (fontData) return fontData;
   // Використовуємо Inter Bold зі стандартного місця або завантажуємо
-  const fontPath = path.join(__dirname, '../../assets/Inter-Bold.ttf');
+  const fontPath = path.join(__dirname, '../../assets/Inter-Bold.woff');
   if (fs.existsSync(fontPath)) {
     fontData = fs.readFileSync(fontPath);
   } else {
@@ -72,7 +72,8 @@ async function generateCard(roastText, username) {
               width: '600px',
               height: '600px',
               borderRadius: '50%',
-              background: `radial-gradient(circle, ${theme.accent}33, transparent)`,
+              backgroundColor: `${theme.accent}22`,
+              display: 'flex',
             },
             children: [],
           },
@@ -88,7 +89,8 @@ async function generateCard(roastText, username) {
               width: '500px',
               height: '500px',
               borderRadius: '50%',
-              background: `radial-gradient(circle, ${theme.accent}22, transparent)`,
+              backgroundColor: `${theme.accent}11`,
+              display: 'flex',
             },
             children: [],
           },
@@ -100,6 +102,7 @@ async function generateCard(roastText, username) {
             style: {
               fontSize: '120px',
               marginBottom: '40px',
+              display: 'flex',
             },
             children: '🔥',
           },
@@ -115,6 +118,7 @@ async function generateCard(roastText, username) {
               marginBottom: '60px',
               letterSpacing: '4px',
               textTransform: 'uppercase',
+              display: 'flex',
             },
             children: 'РОСТ',
           },
@@ -124,12 +128,13 @@ async function generateCard(roastText, username) {
           type: 'div',
           props: {
             style: {
-              background: `${theme.accent}15`,
+              backgroundColor: `${theme.accent}15`,
               border: `2px solid ${theme.accent}40`,
               borderRadius: '24px',
               padding: '60px',
               maxWidth: '900px',
               marginBottom: '60px',
+              display: 'flex',
             },
             children: {
               type: 'div',
@@ -140,6 +145,7 @@ async function generateCard(roastText, username) {
                   lineHeight: '1.5',
                   textAlign: 'center',
                   fontStyle: 'italic',
+                  display: 'flex',
                 },
                 children: `"${roastText}"`,
               },
@@ -154,6 +160,7 @@ async function generateCard(roastText, username) {
               fontSize: '38px',
               color: theme.sub,
               marginBottom: '40px',
+              display: 'flex',
             },
             children: displayName,
           },
@@ -168,6 +175,7 @@ async function generateCard(roastText, username) {
               fontSize: '30px',
               color: `${theme.text}60`,
               letterSpacing: '2px',
+              display: 'flex',
             },
             children: '@RoastUaBot · заростити себе',
           },

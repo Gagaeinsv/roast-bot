@@ -30,7 +30,7 @@ FILES = [
     "src/handlers/roast.js",
     "src/handlers/payment.js",
     "src/handlers/top.js",
-    "assets/Inter-Bold.ttf",
+    "assets/Inter-Bold.woff",
 ]
 
 def run(client, cmd, ignore_error=False):
