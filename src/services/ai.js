@@ -30,22 +30,32 @@ async function callGroq(model, messages, temperature = 0.9, maxTokens = 512) {
 }
 
 /**
- * Генерує рост (текст або vision)
+ * Генерує рост (текст або vision з fallback на текст)
  */
 async function generateRoast(tier, userDescription, photoBase64 = null, mimeType = 'image/jpeg') {
   const systemPrompt = tier === 'paid' ? PAID_SYSTEM_PROMPT : FREE_SYSTEM_PROMPT;
 
   if (photoBase64) {
-    const userContent = [
-      { type: 'image_url', image_url: { url: `data:${mimeType};base64,${photoBase64}` } },
-      { type: 'text', text: userDescription
-          ? `Фото людини. Додатково: "${userDescription}". Зроби рост!`
-          : 'Ось фото. Зроби рост на основі того що бачиш!' },
-    ];
-    return callGroq(VISION_MODEL, [
-      { role: 'system', content: systemPrompt },
-      { role: 'user',   content: userContent },
-    ]);
+    try {
+      const userContent = [
+        { type: 'image_url', image_url: { url: `data:${mimeType};base64,${photoBase64}` } },
+        { type: 'text', text: userDescription
+            ? `Фото людини. Додатково: "${userDescription}". Зроби рост!`
+            : 'Ось фото. Зроби рост на основі того що бачиш!' },
+      ];
+      return await callGroq(VISION_MODEL, [
+        { role: 'system', content: systemPrompt },
+        { role: 'user',   content: userContent },
+      ]);
+    } catch (err) {
+      console.error('Vision failed, fallback to text:', err.message);
+      // Fallback — генеруємо рост без фото
+      const desc = userDescription || 'людина яка надіслала фото але не пояснила хто вона';
+      return await callGroq(TEXT_MODEL, [
+        { role: 'system', content: systemPrompt },
+        { role: 'user',   content: `Людина надіслала фото. Опис: "${desc}". Зроби рост!` },
+      ]);
+    }
   }
 
   return callGroq(TEXT_MODEL, [

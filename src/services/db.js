@@ -65,6 +65,10 @@ function getOrCreateUser(telegramId, username, referredBy = null) {
 }
 
 function canUseFreeTier(telegramId) {
+  // Власник бота завжди має безкоштовний доступ
+  const ownerId = process.env.OWNER_ID ? parseInt(process.env.OWNER_ID) : null;
+  if (ownerId && telegramId === ownerId) return true;
+
   const user = db.prepare('SELECT free_roast_used_at FROM users WHERE telegram_id = ?').get(telegramId);
   if (!user || !user.free_roast_used_at) return true;
 
