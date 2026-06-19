@@ -7,9 +7,9 @@ const { FREE_SYSTEM_PROMPT, PAID_SYSTEM_PROMPT, MODERATION_SYSTEM_PROMPT } = req
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 // Модель для тексту (швидка та безкоштовна)
-const TEXT_MODEL = 'llama-3.3-70b-versatile';
+const TEXT_MODEL = 'llama-3.1-8b-instant';
 // Модель для vision (аналіз фото)
-const VISION_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct';
+const VISION_MODEL = 'llama-3.2-11b-vision-preview';
 
 /**
  * Генерує рост на основі тексту або фото

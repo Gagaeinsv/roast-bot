@@ -27,21 +27,14 @@ async function downloadTelegramFile(ctx, fileId) {
 
 async function handlePhoto(ctx) {
   try {
-    await ctx.reply('📥 Отримав фото! Зараз зроблю тебе зіркою росту...');
-
-    // Беремо найбільше фото з масиву
+    await ctx.reply('📥 Отримав фото! Зараз заросту тебе...');
     const photos = ctx.message.photo;
-    const bestPhoto = photos[photos.length - 1];
-
-    // Завантажуємо та конвертуємо в base64
-    const photoBase64 = await downloadTelegramFile(ctx, bestPhoto.file_id);
-
-    // Текст-підпис якщо є
-    const caption = ctx.message.caption || '';
-
-    await processRoastRequest(ctx, photoBase64, 'image/jpeg', caption);
+    // Беремо середній розмір (не найбільший) щоб не перевантажити API
+    const photo = photos.length >= 3 ? photos[photos.length - 2] : photos[photos.length - 1];
+    const photoBase64 = await downloadTelegramFile(ctx, photo.file_id);
+    await processRoastRequest(ctx, photoBase64, 'image/jpeg', ctx.message.caption || '');
   } catch (err) {
-    console.error('Помилка обробки фото:', err.message);
+    console.error('Photo error:', err.message);
     await ctx.reply('😵 Не вдалося завантажити фото. Спробуй ще раз!');
   }
 }
